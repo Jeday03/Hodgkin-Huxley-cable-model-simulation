@@ -1,104 +1,115 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import json
-import sys
 
-def modelo_cabo_hodgkin_huxley(arquivo_configuracao):
-    with open(arquivo_configuracao, 'r') as arquivo:
-        parametros = json.load(arquivo)
+# Parâmetros da equação do cabo e do modelo Hodgkin-Huxley
+C_m = 1.0        # Capacitância da membrana (µF/cm²)
+g_Na = 120.0     # Condutância máxima de Na+ (mS/cm²)
+g_K = 36.0       # Condutância máxima de K+ (mS/cm²)
+g_L = 0.3        # Condutância de vazamento (mS/cm²)
+E_Na = 50.0      # Potencial de reversão de Na+ (mV)
+E_K = -77.0      # Potencial de reversão de K+ (mV)
+E_L = -54.387    # Potencial de reversão de vazamento (mV)
 
-    # Parâmetros
-    cm = parametros.get("cm", 1.0)  # Capacitância da membrana (uF/cm^2)
-    a = parametros.get("a", 1.0)    # Raio do axônio (cm)
-    rl = parametros.get("rl", 1.0)  # Resistência longitudinal (Ohm*cm)
-    gna = parametros.get("gna", 120.0)  # Condutância de sódio (mS/cm^2)
-    gk = parametros.get("gk", 36.0)  # Condutância de potássio (mS/cm^2)
-    gl = parametros.get("gl", 0.3)  # Condutância de vazamento (mS/cm^2)
-    ena = parametros.get("ena", 50.0)  # Potencial de reversão do sódio (mV)
-    ek = parametros.get("ek", -77.0)  # Potencial de reversão do potássio (mV)
-    el = parametros.get("el", -54.4)  # Potencial de reversão do vazamento (mV)
-    tempo_total = parametros.get("T_max", 10.0)  # Tempo total de simulação (ms)
-    comprimento_max = parametros.get("L_max", 1.0)  # Comprimento do axônio (cm)
-    passo_tempo = parametros.get("dt", 0.01)  # Passo de tempo (ms)
-    passo_espaco = parametros.get("dx", 0.01)  # Passo de espaço (cm)
-    vm_inicial = parametros.get("vm0", -65.0)  # Potencial de membrana inicial (mV)
-    m_inicial = parametros.get("m0", 0.05)
-    h_inicial = parametros.get("h0", 0.6)
-    n_inicial = parametros.get("n0", 0.32)
-    corrente_externa = np.array(parametros["J"])
-    segmentos_mielinicos = np.array(parametros["Mie"])
+a = 15       # raio do axônio (µm)
+R = 5000        # Resistência longitudinal (ohm·cm)
 
-    numero_posicoes = int(comprimento_max / passo_espaco) + 1
-    numero_tempos = int(tempo_total / passo_tempo) + 1
+dx = 0.01        # Espaçamento espacial (cm)
+dt = 0.01        # Passo de tempo (ms)
+L = 3.0          # Comprimento total da fibra (cm)
+T = 50.0         # Tempo total de simulação (ms)
 
-    potencial_membrana = np.full((numero_tempos, numero_posicoes), vm_inicial)  # Matriz de potencial de membrana
-    m = np.full(numero_posicoes, m_inicial)
-    h = np.full(numero_posicoes, h_inicial)
-    n = np.full(numero_posicoes, n_inicial)
+# Função para corrente de estímulo aplicada
+def I_ap(t, x):
+    if x == dx:
+        return 20.0  # µA/cm²
+    return 0.0
 
-    # Funções auxiliares
-    def alfa_m(V):
-        return 0.1 * (V + 40) / (1 - np.exp(-(V + 40) / 10))
+# Funções auxiliares para as variáveis do modelo
+def safe_exp(x):
+    return np.exp(np.clip(x, -100, 100))
 
-    def beta_m(V):
-        return 4 * np.exp(-(V + 65) / 18)
+def alpha_n(V):
+    return 0.01 * (V + 55) / (1 - safe_exp(-(V + 55) / 10))
 
-    def alfa_h(V):
-        return 0.07 * np.exp(-(V + 65) / 20)
+def beta_n(V):
+    return 0.125 * safe_exp(-(V + 65) / 80)
 
-    def beta_h(V):
-        return 1 / (1 + np.exp(-(V + 35) / 10))
+def alpha_m(V):
+    return 0.1 * (V + 40) / (1 - safe_exp(-(V + 40) / 10))
 
-    def alfa_n(V):
-        return 0.01 * (V + 55) / (1 - np.exp(-(V + 55) / 10))
+def beta_m(V):
+    return 4.0 * safe_exp(-(V + 65) / 18)
 
-    def beta_n(V):
-        return 0.125 * np.exp(-(V + 65) / 80)
+def alpha_h(V):
+    return 0.07 * safe_exp(-(V + 65) / 20)
 
-    def calcular_correntes_ionicas(V, m, h, n):
-        corrente_na = gna * m**3 * h * (V - ena)
-        corrente_k = gk * n**4 * (V - ek)
-        corrente_vazamento = gl * (V - el)
-        return corrente_na, corrente_k, corrente_vazamento
+def beta_h(V):
+    return 1 / (1 + safe_exp(-(V + 35) / 10))
 
-    # Simulação
-    for t in range(1, numero_tempos):
-        for x in range(1, numero_posicoes - 1):
-            d2Vm_dx2 = (potencial_membrana[t-1, x+1] - 2 * potencial_membrana[t-1, x] + potencial_membrana[t-1, x-1]) / passo_espaco**2
-            if segmentos_mielinicos[x] == 1:  # Segmento mielinizado
-                d2Vm_dx2 /= 100
-            
-            corrente_na, corrente_k, corrente_vazamento = calcular_correntes_ionicas(potencial_membrana[t-1, x], m[x], h[x], n[x])
-            corrente_ionica = corrente_na + corrente_k + corrente_vazamento
+# Simulação do modelo Hodgkin-Huxley com equação do cabo
+def hodgkin_huxley_1D():
+    n_x = int(L / dx)
+    n_t = int(T / dt)
 
-            potencial_membrana[t, x] = potencial_membrana[t-1, x] + passo_tempo / (cm * a) * (-corrente_ionica + rl * d2Vm_dx2 + corrente_externa[t, x])
+    V = np.ones(n_x) * -65.0
+    n = np.zeros(n_x) + 0.3177
+    m = np.zeros(n_x) + 0.0529
+    h = np.zeros(n_x) + 0.5961
 
-            m[x] += passo_tempo * (alfa_m(potencial_membrana[t-1, x]) * (1 - m[x]) - beta_m(potencial_membrana[t-1, x]) * m[x])
-            h[x] += passo_tempo * (alfa_h(potencial_membrana[t-1, x]) * (1 - h[x]) - beta_h(potencial_membrana[t-1, x]) * h[x])
-            n[x] += passo_tempo * (alfa_n(potencial_membrana[t-1, x]) * (1 - n[x]) - beta_n(potencial_membrana[t-1, x]) * n[x])
+    V_time = np.zeros((n_t, n_x))
+    D = (a / (2 * R)) * (dt / dx**2)
 
-    # Salvar resultados
-    np.savetxt("tabela_resultados.csv", potencial_membrana, delimiter=",")
+    for t_idx in range(n_t):
+        V_new = V.copy()
 
-    # Criar GIF
-    figura, eixo = plt.subplots()
-    linha, = eixo.plot(np.linspace(0, comprimento_max, numero_posicoes), potencial_membrana[0])
-    eixo.set_xlim(0, comprimento_max)
-    eixo.set_ylim(-80, 60)
-    eixo.set_xlabel("Posição (cm)")
-    eixo.set_ylabel("Voltagem (mV)")
+        for x_idx in range(1, n_x - 1):
+            I_Na = g_Na * m[x_idx]**3 * h[x_idx] * (V[x_idx] - E_Na)
+            I_K = g_K * n[x_idx]**4 * (V[x_idx] - E_K)
+            I_L = g_L * (V[x_idx] - E_L)
+            I_stim = I_ap(t_idx * dt, x_idx * dx)
 
-    def atualizar(frame):
-        linha.set_ydata(potencial_membrana[frame])
-        return linha,
+            dV_dt = (D * (V[x_idx+1] - 2 * V[x_idx] + V[x_idx-1]) -
+                    (I_Na + I_K + I_L - I_stim)) / C_m
+            V_new[x_idx] += dV_dt * dt
 
-    animacao = FuncAnimation(figura, atualizar, frames=numero_tempos, blit=True)
-    animacao.save("voltagem_posicao.gif", fps=30)
+            dn = (alpha_n(V[x_idx]) * (1 - n[x_idx]) - beta_n(V[x_idx]) * n[x_idx]) * dt
+            dm = (alpha_m(V[x_idx]) * (1 - m[x_idx]) - beta_m(V[x_idx]) * m[x_idx]) * dt
+            dh = (alpha_h(V[x_idx]) * (1 - h[x_idx]) - beta_h(V[x_idx]) * h[x_idx]) * dt
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Uso: python main.py config.txt")
-    else:
-        caminho_config = sys.argv[1]
-        modelo_cabo_hodgkin_huxley(caminho_config)
+            n[x_idx] += dn
+            m[x_idx] += dm
+            h[x_idx] += dh
+
+        V = V_new
+        V_time[t_idx, :] = V
+
+    return V_time
+
+# Executar simulação
+V_time = hodgkin_huxley_1D()
+
+# Criar animação
+x = np.linspace(0, L, int(L/dx))
+
+fig, ax = plt.subplots(figsize=(10, 6))
+line, = ax.plot([], [], lw=2)
+ax.set_xlim(0, L)
+ax.set_ylim(-80, 50)
+ax.set_xlabel("Posição x (cm)")
+ax.set_ylabel("Potencial de membrana V (mV)")
+ax.set_title("Propagação do Potencial de Ação")
+
+def init():
+    line.set_data([], [])
+    return line,
+
+def update(frame):
+    line.set_data(x, V_time[frame, :])
+    return line,
+
+n_frames = V_time.shape[0]
+ani = FuncAnimation(fig, update, frames=n_frames, init_func=init, blit=True)
+
+# Salvar o GIF
+ani.save("propagacao_potencial.gif", writer="imagemagick", fps=140)
