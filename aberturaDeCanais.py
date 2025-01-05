@@ -89,7 +89,7 @@ plt.figure(figsize=(12, 8))
 # Potencial de membrana
 plt.subplot(2, 1, 1)
 plt.plot(resultados[0], resultados[1], label="Potencial (mV)")
-plt.title("Modelo de Hodgkin-Huxley (Modificado)")
+plt.title("Modelo de Hodgkin-Huxley & Gráficos de Abertura dos Canais Ionicos e Relação Entre Eles")
 plt.ylabel("Potencial de Membrana (mV)")
 plt.legend()
 
