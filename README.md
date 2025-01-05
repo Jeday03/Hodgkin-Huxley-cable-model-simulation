@@ -3,6 +3,8 @@
 ## 1. Introdução
 Este código implementa a simulação do modelo Hodgkin-Huxley (HH) em um cabo utilizando as equações de condução de potenciais de ação. O modelo é baseado em um sistema unidimensional (“1D”), considerando as propriedades biofísicas da membrana neuronal.
 
+![propagacao_potencial_HH_cabo](https://github.com/user-attachments/assets/85e013ae-ff0d-4915-a0ba-993adcda8c8c)
+
 ## 2. Dependências
 O código utiliza as seguintes bibliotecas do Python:
 - **numpy**: Para cálculos matriciais e operações matemáticas.
@@ -72,3 +74,4 @@ dx = 0.01
 dt = 0.01
 L = 1.0
 T = 50.0
+
