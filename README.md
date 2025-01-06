@@ -44,6 +44,8 @@ Gera gráficos estáticos do potencial de membrana para diferentes instantes ao 
 #### Recursos Principais:
 - **Gráficos Comparativos:** Apresenta o estado da membrana em quatro momentos distintos durante a simulação.
 - **Visualização Detalhada:** Ajuda a compreender como o potencial de ação se propaga ao longo do cabo.
+
+
 ![Figure_2](https://github.com/user-attachments/assets/f5723b1d-70bd-4efe-a79c-68e95c8c7aca)
 
 ---
