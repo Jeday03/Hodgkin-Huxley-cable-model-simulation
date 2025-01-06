@@ -3,7 +3,7 @@
 ## Visão Geral
 Este projeto implementa o modelo Hodgkin-Huxley (HH) para a propagação do potencial de ação em um cabo unidimensional. O objetivo é estudar o comportamento dos potenciais de ação em fibras nervosas utilizando simulações numéricas. O sistema gera resultados em formatos como gráficos estáticos, animações e arquivos CSV.
 
-![propagacao_potencial_HH_cabo](https://github.com/user-attachments/assets/c299a7f6-f4d2-4579-ac81-7424745de471)
+![propagacao_potencial_HH_cabo](https://github.com/user-attachments/assets/8b9d20a6-9d60-4465-81fc-2bfd7b04f934)
 
 ---
 
