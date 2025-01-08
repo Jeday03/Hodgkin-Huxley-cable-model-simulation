@@ -3,7 +3,8 @@
 ## Visão Geral
 Este projeto implementa o modelo Hodgkin-Huxley (HH) para a propagação do potencial de ação em um cabo unidimensional. O objetivo é estudar o comportamento dos potenciais de ação em fibras nervosas utilizando simulações numéricas. O sistema gera resultados em formatos como gráficos estáticos, animações e arquivos CSV.
 
-![propagacao_potencial_HH_cabo](https://github.com/user-attachments/assets/8b9d20a6-9d60-4465-81fc-2bfd7b04f934)
+![propagacao_potencial_HH_cabo_certo](https://github.com/user-attachments/assets/657c25e8-1e07-41f2-bb7b-228e9c201ddf)
+
 
 ---
 
@@ -66,7 +67,7 @@ Gera gráficos estáticos do potencial de membrana para diferentes instantes ao 
 ### Espaciais e Temporais
 - **Raio do axônio (a):** 0.1 cm
 - **Resistência longitudinal (R):** 100.0 ohm·cm
-- **Espaçamento espacial (dx):** 0.01 cm
+- **Espaçamento espacial (dx):** 0.003 cm
 - **Passo de tempo (dt):** 0.01 ms
 - **Comprimento total (L):** 1.0 cm
 - **Tempo total de simulação (T):** 50.0 ms
